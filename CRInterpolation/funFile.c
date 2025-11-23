@@ -1,5 +1,6 @@
 #include "stdio.h" // in out
 #include "math.h" // math functions
+#include "stdlib.h" // for dynamic allocation
 
 void displayAuthor(){
     printf("Written by Anton Fadic \n");
@@ -35,7 +36,7 @@ double *exactFun(double *inVal, int outDim, int InDim){
         exit(0);
     }
 
-    double x,y,z;
+    double x,y;
     x=*inVal;
     y=*(inVal+1);
     // *(out) = pow(*(inVal),2)*1; //+ (pow(*(inVal+1),2) + pow(*(inVal+2),2) ); //+ pow(*(inVal+3),2))*10000;  //+ pow(*(inVal+3),2)*1 + pow(*(inVal+4),2)*1 + pow(*(inVal+5),2)*1 ; //output dim 1
@@ -135,6 +136,7 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
              *(ptrTable+j*length+i) = *(exactFun(grid+i*nDimIn, nDimOut, nDimIn)+j);
         }
     }
+    
     fp = fopen ("Table.bin", "wb");
     printf("Writing table file... \n");
     fwrite(ptrTable,sizeof(*ptrTable),nDimOut*length,fp);
