@@ -137,32 +137,48 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
 
 void writeTableConfig(int nDimIn, int nDimOut){
     FILE * fp;
-    //int i;
-    double *ptr = 0;
+    const int configSize = 3 * nDimIn + 2;
+    double config[configSize];
 
-    ptr = (double*) malloc((3*nDimIn+2)*sizeof(double)); //nBreaks per dimension
     //write number of dimensions in
-    *ptr=nDimIn;
+    *config = nDimIn;
     //write the number of dimensions out
-    *(ptr+1) = nDimOut;
+    *(config+1) = nDimOut;
 
     //number of breaks. 0-nDimIn-1
-    *(ptr+2+0) = (double) 40;
-    *(ptr+2+1) = (double) 40;
-    // *(ptr+2+3) = (double) 10;
-    // *(ptr+2+4) = (double) 10;
+    double n_breaks[nDimIn]; 
+    n_breaks[0] = 40;
+    n_breaks[1] = 40;
+
+    for (int i = 0; i < nDimIn; i++) {
+        *(config + 2 + i) = (double) n_breaks[i];
+    }
+
+    double min_vals[nDimIn];
+    min_vals[0] = 1;
+    min_vals[1] = 1;
+
+    double max_vals[nDimIn];
+    max_vals[0] = 5;
+    max_vals[1] = 5;
 
     //Minimum and Maximum. 0-nDimIn-1
-    *(ptr+nDimIn+2+0) = (double) 1; *(ptr+2*nDimIn+2+0) = (double) 5; //Temp
-    *(ptr+nDimIn+2+1) = (double) 1; *(ptr+2*nDimIn+2+1) = (double) 5; //yNH3
+    *(config+nDimIn+2+0) = min_vals[0]; *(config+2*nDimIn+2+0) = max_vals[0]; //Temperature
+    *(config+nDimIn+2+1) = min_vals[1]; *(config+2*nDimIn+2+1) = max_vals[1]; //yNH3
     // *(ptr+nDimIn+2+2) = (double) 0.00000001; *(ptr+2*nDimIn+2+2) = (double) 0.1; //yNO
     // *(ptr+nDimIn+2+3) = (double) 0.02; *(ptr+2*nDimIn+2+3) = (double) 0.25; //yO2
 
     fp = fopen ("tableConfig.bin", "wb");
-    fwrite(ptr,sizeof(*ptr),3*nDimIn+2,fp);
+    if (!fp) {
+        perror("Error opening tableConfig.bin for writing");
+        return;
+    }
+    size_t written = fwrite(config, sizeof(double), configSize, fp);
+    if (written != (size_t)configSize) {
+        fprintf(stderr, "Error: Only wrote %zu/%d elements\n", written, configSize);
+    }
     fclose (fp);
     printf("Config file written successfully \n \n");
-    free(ptr);
 }
 
 double *readTableConfig(int nDim){
