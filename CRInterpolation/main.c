@@ -52,10 +52,6 @@ int main(){
     double *testValue;
     testValue = (double*) malloc(sizeof(double)*nDimIn*numTestVal);
 
-
-    double *interpResult=0;
-    interpResult=(double*) malloc(sizeof(double)*nDimIn*numTestVal);
-
     *(testValue + 0) = 1.9;  //temp
     *(testValue + 1) = 1.9;  //yNH3
     // *(testValue + 2) = 0.05;  //yNO
