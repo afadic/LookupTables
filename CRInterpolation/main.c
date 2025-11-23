@@ -66,7 +66,7 @@ int main(){
     clock_t toc = clock();
     printf("Average time taken per iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
     printf("Solution is %f \n", *sol);
-    printf("Exact    is %f \n", *exactFun(testValue,1,1));
+    printf("Exact    is %f \n", exactFun(testValue,1,1));
 
     //Display GNU version
     printf("\n\n\ngcc version: %d.%d.%d\n",__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__);

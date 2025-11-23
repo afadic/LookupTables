@@ -26,24 +26,15 @@ double *invFunTransformIn(double *inVal){
     return inVal;
 }
 
-double *exactFun(double *inVal, int outDim, int InDim){
+double exactFun(double *inVal, int outDim, int InDim){
     //this is the exact function to compare to
 
-    double *out=0;
-	out = malloc(sizeof(double)*InDim);
-	if(out==NULL){
-            printf("Memory not allocated. Table could not be read. Closing");
-        exit(0);
-    }
-
-    double x,y;
-    x=*inVal;
-    y=*(inVal+1);
+    const double x = inVal[0];
+    const double y = inVal[1];
     // *(out) = pow(*(inVal),2)*1; //+ (pow(*(inVal+1),2) + pow(*(inVal+2),2) ); //+ pow(*(inVal+3),2))*10000;  //+ pow(*(inVal+3),2)*1 + pow(*(inVal+4),2)*1 + pow(*(inVal+5),2)*1 ; //output dim 1
-    *out = ((-x*x*(1-y)-y*y));
     // *(out+1) = 2*(*out);
     // *(out+2) = 3*(*out);
-    return out;
+    return ((-x*x*(1-y)-y*y));
 }
 
 void checkInBoundaries(int *fl, double *t,int nDimIn, double *nBreaks){
@@ -133,10 +124,9 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
             // apply inverse transformation
             // gridTemp= invFunTransformIn((grid+i*nDimIn));
             // *(ptrTable+j*length+i) = *(exactFun(gridTemp, nDimOut, nDimIn)+j);
-             *(ptrTable+j*length+i) = *(exactFun(grid+i*nDimIn, nDimOut, nDimIn)+j);
+             *(ptrTable+j*length+i) = (exactFun(grid+i*nDimIn, nDimOut, nDimIn)+j);
         }
     }
-    
     fp = fopen ("Table.bin", "wb");
     printf("Writing table file... \n");
     fwrite(ptrTable,sizeof(*ptrTable),nDimOut*length,fp);
