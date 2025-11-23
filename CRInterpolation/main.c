@@ -48,12 +48,10 @@ int main(){
             printf("table %i first value is: %f \n", i+1, *(ptrTableFirst+nVals*i)); //show table stats
     }
 
-    int numTestVal = 1;
-    double *testValue;
-    testValue = (double*) malloc(sizeof(double)*nDimIn*numTestVal);
+    double testValue[2];
 
-    *(testValue + 0) = 1.9;  //temp
-    *(testValue + 1) = 1.9;  //yNH3
+    testValue[0] = 1.9;  //temp
+    testValue[1] = 1.9;  //yNH3
     // *(testValue + 2) = 0.05;  //yNO
     // *(testValue + 3) = 0.2;  //yO2
 
