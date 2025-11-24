@@ -16,6 +16,14 @@ Chemical Engineering
 Anton Fadic
 23/12/2016 First release
 06/01/2019 Code maintenance. Checked for memory leaks, readibility and name convention.
+==99415== 
+==99415== HEAP SUMMARY:
+==99415==     in use at exit: 0 bytes in 0 blocks
+==99415==   total heap usage: 18 allocs, 18 frees, 75,280 bytes allocated
+==99415== 
+==99415== All heap blocks were freed -- no leaks are possible
+==99415== 
+==99415== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 **********************************************************************/
 
 int main(){
@@ -29,16 +37,18 @@ int main(){
 	ptrFirstVal = readTableConfig(nDimIn); //pointer to the address of the first entry of table config
 
     nVals = getNumVals(ptrFirstVal+2, nDimIn); //this gets the number of values of the grid.
+    
     printf("Table size %f MB \n",(double) nVals*nDimOut/1024/1024*sizeof(double));
 
     double *grid;
     grid = writeGrid(ptrFirstVal, nDimIn, nVals); //writes the grid. Not working for more than 6 dimension. Fragmentate memory
     saveGrid(grid,nDimIn,nVals); //save grid to a file. Comment if necessary
-
+    
     //grid = readGrid(nDimIn,nVals); //reads the grid if stored (faster calculations)
 
     clock_t start = clock(), diff;
     writeTable(nVals,nDimIn,nDimOut,grid); //unnecessary if the table exist
+    free(grid);
     diff = clock() - start; int msec = diff * 1000 / CLOCKS_PER_SEC;
     printf("Time taken write table %d seconds %d milliseconds \n", msec/1000, msec%1000);
 
@@ -57,15 +67,18 @@ int main(){
 
     //testValue = funTransformIn(testValue);
     double *sol=0;
-    int nIt=1;
+    int nIt=1000;
     clock_t tic = clock();
     for(i=0;i<nIt;i++){
         //interpolate(testValue,nDimIn,1,ptrFirstVal,ptrTableFirst,nVals); // receives the pointer of the stored interpolated data. Order is: nDimIn,nDimOut,numTestVal
         sol=interpolate(testValue,nDimIn,1,ptrFirstVal,ptrTableFirst,nVals);
     }
+    free(ptrFirstVal);
+    free(ptrTableFirst);
     clock_t toc = clock();
     printf("Average time taken per iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
     printf("Solution is %f \n", *sol);
+    free(sol);
     printf("Exact    is %f \n", exactFun(testValue,1,1));
 
     //Display GNU version

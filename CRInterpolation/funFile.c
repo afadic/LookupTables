@@ -89,6 +89,7 @@ double *readFile(int length, int nDimOut){
 	ptrFile = (double*) malloc(nDimOut*length*sizeof(double));
     if(ptrFile==NULL){
             printf("Memory not allocated. Table could not be read. Closing");
+            free(ptrFile);
     exit(0);
     }
 
@@ -131,6 +132,7 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
     printf("Writing table file... \n");
     fwrite(ptrTable,sizeof(*ptrTable),nDimOut*length,fp);
     free(gridTemp);
+    free(ptrTable);
     fclose (fp);
     printf("table written successfully \n");
 }
@@ -208,9 +210,9 @@ double *readTableConfig(int nDim){
 
 double *writeGrid(double *ptrFirstVal, int nDimIn, int nVals){
     //This function is in its final version. Please do not touch. This function fails for more than 6 dimensions
-    //because of segmentation fault. Working on this. Possible workaraounds, fragmentate de memory.
+    //because of segmentation fault. Working on this. Possible workaraounds, memory fragmentation.
     int i,j;
-    double *h = 0; h = (double*) malloc(sizeof(double)*nDimIn); //h is the spacing in between the data.
+    double h[nDimIn]; // breakpoint spacing
     double *nBreaks=0; nBreaks = (ptrFirstVal+2);
     double *min=0; min = (ptrFirstVal + 2 + nDimIn);
     double *max=0; max = (ptrFirstVal + 2 + 2*nDimIn);
@@ -225,7 +227,7 @@ double *writeGrid(double *ptrFirstVal, int nDimIn, int nVals){
         sumNBreaks += *(nBreaks + i);
     }
 
-    double *rValues=0; rValues=malloc(sizeof(double)*sumNBreaks);
+    double rValues[sumNBreaks];
     /*Objective here is to write the list of possible values as rValues={X1,X2...X_b1,Y1,Y2,...Y_b2}
     with following rule:
     Xi+1=Xi+h; X0= *(min+0);
@@ -240,7 +242,13 @@ double *writeGrid(double *ptrFirstVal, int nDimIn, int nVals){
     }
 
     /*The objective here is to write the vectors of *grid values from the rValues vector. This is the loops that fails at nDimIn>6*/
-    double *grid=0; grid=(double*) malloc(sizeof(double)*nVals*nDimIn*1); if(grid==NULL) {printf("grid memory not allocated. Closing.\n"); exit(1);}
+    double *grid=0; 
+    grid=(double*) malloc(sizeof(double)*nVals*nDimIn*1); 
+    if(grid==NULL) {
+        printf("grid memory not allocated. Closing.\n"); exit(1);
+    }
+    //double grid[nVals*nDimIn];
+
     int temp=1; j=0; int temp2=0;
 
     while(j<nDimIn){
@@ -297,21 +305,18 @@ double *interpolate(double *x, int nDimIn, int nDimOut, double *ptrFirstVal, dou
     x = funTransformIn(x);
     x = invFunTransformIn(x);
     */
-    double *h = 0;
-	h = (double*) malloc(sizeof(double)*nDimIn); //h is the spacing in between the data.
+
+    double h[nDimIn];
 
 	for(i=0;i<nDimIn;++i){
 		*(h+i) = (*(max+i)- *(min+i))/(*(nBreaks+i)-1);  //get the h
 	}
 
-    double *t=0;
-	t=(double*) malloc(sizeof(double)*nDimIn); //position in table
+    double t[nDimIn]; // position in table
 
-    int *fl=0;
-	fl=(int*) malloc(sizeof(int)*nDimIn);
+    int fl[nDimIn];
 
-	double *xTemp=0;
-	xTemp=(double*) malloc(sizeof(double)*nDimIn);
+    double xTemp[nDimIn];
 
 	for(i=0;i<nDimIn;++i){
 		*(xTemp+i)= *(x+i); //copy query vector
@@ -394,5 +399,6 @@ double *interpolate(double *x, int nDimIn, int nDimOut, double *ptrFirstVal, dou
     //printf("exact  is: %f \n", *(exactFun(x,nDimOut,nDimIn)+nDimOut-1));
     //printf("error is %f \% \n", 100-100*(*answer/(*(exactFun(x,nDimOut,nDimIn)+nDimOut-1))) );
    // free(answer); free(h); free(t); free(xTemp); free(fl);
+   free(pos);
    return answer;
 }
