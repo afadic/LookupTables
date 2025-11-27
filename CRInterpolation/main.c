@@ -10,7 +10,8 @@ Chemical Engineering
 23/12/2016 First release
 06/01/2019 Code maintenance. Checked for memory leaks, readibility and name convention.
 Compiles without warnings
-gcc -pg -O2 main.c funFile.c -o hermite -lm
+gcc -pg main.c funFile.c -o hermite -lm
+Compiling with either O1, O2 or O3 flags increases the D1 misses and it does not reduce the execution time
 
 Test results
 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes
@@ -54,7 +55,7 @@ valgrind --tool=cachegrind --branch-sim=yes
 #define MICROSECONDS_IN_SEC 1000000.0
 
 int main(){
-    int nDimIn = 4;
+    int nDimIn = 8;
     int nDimOut = 1;
     int nVals;
     int i;
@@ -85,26 +86,32 @@ int main(){
             printf("table %i first value is: %f \n", i+1, *(ptrTableFirst+nVals*i)); //show table stats
     }
 
-    double testValue[nDimIn];
-
-    for(i=0;i<nDimIn;++i){
-        testValue[i] = 1.9;
-    }
-
     //testValue = funTransformIn(testValue);
     double sol=0;
     int nIt=1;
+
+    double testValue[nIt][nDimIn];
+    int j=0;
+
+    for(i=0;i<nIt;i++) {
+        for(j=0;j<nDimIn;j++){
+            testValue[i][j] = 1.9;
+        }
+    }
+
     clock_t tic = clock();
 
     for(i=0;i<nIt;i++){
-        sol=interpolate(testValue,nDimIn,1,ptrFirstVal,ptrTableFirst,nVals);
+        sol=interpolate(testValue[i],nDimIn,1,ptrFirstVal,ptrTableFirst,nVals);
     }
+    clock_t toc = clock();
+
     free(ptrFirstVal);
     free(ptrTableFirst);
-    clock_t toc = clock();
-    printf("Average time taken per iteration is %f us \n", (double)1000*1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
+
+    printf("Average time taken per iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
     printf("Solution is %f \n", sol);
-    printf("Exact    is %f \n", exactFun(testValue,nDimIn));
+    printf("Exact    is %f \n", exactFun(*testValue,nDimIn));
 
     //Display GNU version
     printf("\n\n\ngcc version: %d.%d.%d\n",__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__);
