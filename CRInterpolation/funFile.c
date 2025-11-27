@@ -34,7 +34,7 @@ double exactFun(double *inVal, int InDim){
     for(i=0; i<InDim; i++){
         x[i] = inVal[i];
     }
-    return ((-x[0]*x[0]*(1-x[1])-x[1]*x[1]));
+    return ((-x[0]*x[0]*(1-x[1])-x[1]*x[1]*x[2]*x[3]*x[4]));
 }
 
 void checkInBoundaries(int *fl, double *t,int nDimIn, double *nBreaks){
@@ -374,6 +374,7 @@ double interpolate(double *x, int nDimIn, int nDimOut, double *ptrFirstVal, doub
     //this is the most expensive function of the code!!!
     //It searches the table and extracts the required values
     //Takes ~90% of time.
+
     for(i=0;i<(int) pow(4,nDimIn);++i){
         j=0; factor=0; temp=1;
         while(j<nDimIn){
