@@ -1,21 +1,19 @@
 /**********************************************************************
 Function for building, reading, and evaluating a lookup table
 using a Hermite 3rd order spline. Meant to be used as UDF in Fluent.
-Compiled with GCC on windows.
 Author: Anton Fadic
 University of Alberta
 Chemical Engineering
 **********************************************************************/
-//#include "udf.h" //UDF macros
-#include "stdio.h" // in out
-#include "stdlib.h" // for dynamic allocation
-#include "time.h" // to compute time
-#include "math.h" // math functions
-#include "funFile.h" //calls required functions for this file, found in funFile.c
+
 /*********************************************************************
-Anton Fadic
 23/12/2016 First release
 06/01/2019 Code maintenance. Checked for memory leaks, readibility and name convention.
+Compiles without warnings
+gcc -pg -O2 main.c funFile.c -o hermite -lm
+
+Test results
+valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes
 ==99415== 
 ==99415== HEAP SUMMARY:
 ==99415==     in use at exit: 0 bytes in 0 blocks
@@ -24,10 +22,39 @@ Anton Fadic
 ==99415== All heap blocks were freed -- no leaks are possible
 ==99415== 
 ==99415== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+valgrind --tool=cachegrind --branch-sim=yes
+==2284542== I   refs:      4,280,257
+==2284542== I1  misses:        1,910
+==2284542== LLi misses:        1,853
+==2284542== I1  miss rate:      0.04%
+==2284542== LLi miss rate:      0.04%
+==2284542== 
+==2284542== D   refs:      2,006,498  (1,641,871 rd   + 364,627 wr)
+==2284542== D1  misses:       29,868  (    7,376 rd   +  22,492 wr)
+==2284542== LLd misses:        8,927  (    1,576 rd   +   7,351 wr)
+==2284542== D1  miss rate:       1.5% (      0.4%     +     6.2%  )
+==2284542== LLd miss rate:       0.4% (      0.1%     +     2.0%  )
+==2284542== 
+==2284542== LL refs:          31,778  (    9,286 rd   +  22,492 wr)
+==2284542== LL misses:        10,780  (    3,429 rd   +   7,351 wr)
+==2284542== LL miss rate:        0.2% (      0.1%     +     2.0%  )
+==2284542== 
+==2284542== Branches:        286,214  (  271,321 cond +  14,893 ind)
+==2284542== Mispredicts:       5,640  (    5,321 cond +     319 ind)
+==2284542== Mispred rate:        2.0% (      2.0%     +     2.1%   )
+
 **********************************************************************/
 
+#include "stdio.h" // in out
+#include "stdlib.h" // for dynamic allocation
+#include "time.h" // to compute time
+#include "math.h" // math functions
+#include "funFile.h" //calls required functions for this file, found in funFile.c
+#define MICROSECONDS_IN_SEC 1000000.0
+
 int main(){
-    int nDimIn = 2;
+    int nDimIn = 4;
     int nDimOut = 1;
     int nVals;
     int i;
@@ -38,7 +65,7 @@ int main(){
 
     nVals = getNumVals(ptrFirstVal+2, nDimIn); //this gets the number of values of the grid.
     
-    printf("Table size %f MB \n",(double) nVals*nDimOut/1024/1024*sizeof(double));
+    printf("Table size %f MB \n",(double) nVals*nDimOut/1000/1024*sizeof(double));
 
     double *grid;
     grid = writeGrid(ptrFirstVal, nDimIn, nVals); //writes the grid. Not working for more than 6 dimension. Fragmentate memory
@@ -58,28 +85,26 @@ int main(){
             printf("table %i first value is: %f \n", i+1, *(ptrTableFirst+nVals*i)); //show table stats
     }
 
-    double testValue[2];
+    double testValue[nDimIn];
 
-    testValue[0] = 1.9;  //temp
-    testValue[1] = 1.9;  //yNH3
-    // *(testValue + 2) = 0.05;  //yNO
-    // *(testValue + 3) = 0.2;  //yO2
+    for(i=0;i<nDimIn;++i){
+        testValue[i] = 1.9;
+    }
 
     //testValue = funTransformIn(testValue);
-    double *sol=0;
-    int nIt=1000;
+    double sol=0;
+    int nIt=1;
     clock_t tic = clock();
+
     for(i=0;i<nIt;i++){
-        //interpolate(testValue,nDimIn,1,ptrFirstVal,ptrTableFirst,nVals); // receives the pointer of the stored interpolated data. Order is: nDimIn,nDimOut,numTestVal
         sol=interpolate(testValue,nDimIn,1,ptrFirstVal,ptrTableFirst,nVals);
     }
     free(ptrFirstVal);
     free(ptrTableFirst);
     clock_t toc = clock();
-    printf("Average time taken per iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
-    printf("Solution is %f \n", *sol);
-    free(sol);
-    printf("Exact    is %f \n", exactFun(testValue,1,1));
+    printf("Average time taken per iteration is %f us \n", (double)1000*1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
+    printf("Solution is %f \n", sol);
+    printf("Exact    is %f \n", exactFun(testValue,nDimIn));
 
     //Display GNU version
     printf("\n\n\ngcc version: %d.%d.%d\n",__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__);

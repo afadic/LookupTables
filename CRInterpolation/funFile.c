@@ -26,15 +26,15 @@ double *invFunTransformIn(double *inVal){
     return inVal;
 }
 
-double exactFun(double *inVal, int outDim, int InDim){
+double exactFun(double *inVal, int InDim){
     //this is the exact function to compare to
+    double x[InDim];
+    int i=0;
 
-    const double x = inVal[0];
-    const double y = inVal[1];
-    // *(out) = pow(*(inVal),2)*1; //+ (pow(*(inVal+1),2) + pow(*(inVal+2),2) ); //+ pow(*(inVal+3),2))*10000;  //+ pow(*(inVal+3),2)*1 + pow(*(inVal+4),2)*1 + pow(*(inVal+5),2)*1 ; //output dim 1
-    // *(out+1) = 2*(*out);
-    // *(out+2) = 3*(*out);
-    return ((-x*x*(1-y)-y*y));
+    for(i=0; i<InDim; i++){
+        x[i] = inVal[i];
+    }
+    return ((-x[0]*x[0]*(1-x[1])-x[1]*x[1]));
 }
 
 void checkInBoundaries(int *fl, double *t,int nDimIn, double *nBreaks){
@@ -100,7 +100,7 @@ double *readFile(int length, int nDimOut){
     }
 
     printf("Reading table file... \n");
-    fread(ptrFile,sizeof(*ptrFile),nDimOut*length,fp);
+    size_t file_read = fread(ptrFile,sizeof(*ptrFile),nDimOut*length,fp);
     fclose (fp);
     return ptrFile;
 }
@@ -125,7 +125,7 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
             // apply inverse transformation
             // gridTemp= invFunTransformIn((grid+i*nDimIn));
             // *(ptrTable+j*length+i) = *(exactFun(gridTemp, nDimOut, nDimIn)+j);
-             *(ptrTable+j*length+i) = (exactFun(grid+i*nDimIn, nDimOut, nDimIn)+j);
+             *(ptrTable+j*length+i) = (exactFun(grid+i*nDimIn, nDimIn)+j);
         }
     }
     fp = fopen ("Table.bin", "wb");
@@ -141,6 +141,7 @@ void writeTableConfig(int nDimIn, int nDimOut){
     FILE * fp;
     const int configSize = 3 * nDimIn + 2;
     double config[configSize];
+    int i=0;
 
     //write number of dimensions in
     *config = nDimIn;
@@ -149,24 +150,34 @@ void writeTableConfig(int nDimIn, int nDimOut){
 
     //number of breaks. 0-nDimIn-1
     double n_breaks[nDimIn]; 
-    n_breaks[0] = 40;
-    n_breaks[1] = 40;
+    for(i=0; i<nDimIn; i++){
+        n_breaks[i] = 10;
+    }
 
-    for (int i = 0; i < nDimIn; i++) {
+    for (i = 0; i < nDimIn; i++) {
         *(config + 2 + i) = (double) n_breaks[i];
     }
 
     double min_vals[nDimIn];
-    min_vals[0] = 1;
-    min_vals[1] = 1;
-
     double max_vals[nDimIn];
-    max_vals[0] = 5;
-    max_vals[1] = 5;
 
+    for(i=0; i<nDimIn; i++){
+        min_vals[i] = 1;
+        max_vals[i] = 5;
+    }
+
+    for(i=0; i<nDimIn; i++){
+        *(config+nDimIn+2+i) = min_vals[i]; *(config+2*nDimIn+2+i) = max_vals[i]; //Temperature
+    }
+
+    /*
     //Minimum and Maximum. 0-nDimIn-1
     *(config+nDimIn+2+0) = min_vals[0]; *(config+2*nDimIn+2+0) = max_vals[0]; //Temperature
-    *(config+nDimIn+2+1) = min_vals[1]; *(config+2*nDimIn+2+1) = max_vals[1]; //yNH3
+    *(config+nDimIn+2+1) = min_vals[1]; *(config+2*nDimIn+2+1) = max_vals[1]; //xNH3
+    *(config+nDimIn+2+2) = min_vals[2]; *(config+2*nDimIn+2+2) = max_vals[2]; //xO2
+    *(config+nDimIn+2+3) = min_vals[3]; *(config+2*nDimIn+2+3) = max_vals[3]; //xNO
+    */
+
     // *(ptr+nDimIn+2+2) = (double) 0.00000001; *(ptr+2*nDimIn+2+2) = (double) 0.1; //yNO
     // *(ptr+nDimIn+2+3) = (double) 0.02; *(ptr+2*nDimIn+2+3) = (double) 0.25; //yO2
 
@@ -197,7 +208,7 @@ double *readTableConfig(int nDim){
 
     fp = fopen ("tableConfig.bin", "rb");
     printf("Reading config file... \n");
-    fread(ptr2,1,(3*nDim+2)*sizeof(*ptr2),fp);
+    size_t file_read = fread(ptr2,1,(3*nDim+2)*sizeof(*ptr2),fp);
     fclose (fp);
     printf("Config file read successfully \n \n");
     printf("Number of input dimensions is %i \n", (int) *ptr2);
@@ -227,7 +238,9 @@ double *writeGrid(double *ptrFirstVal, int nDimIn, int nVals){
         sumNBreaks += *(nBreaks + i);
     }
 
-    double rValues[sumNBreaks];
+    //double rValues[sumNBreaks];
+    double *rValues=0; rValues=malloc(sizeof(double)*sumNBreaks);
+
     /*Objective here is to write the list of possible values as rValues={X1,X2...X_b1,Y1,Y2,...Y_b2}
     with following rule:
     Xi+1=Xi+h; X0= *(min+0);
@@ -266,6 +279,7 @@ double *writeGrid(double *ptrFirstVal, int nDimIn, int nVals){
 
     /* //this code is for visualizing the grid. Uncomment if necessary,
     for(i=0;i<nVals;++i){j=0; while(j<nDimIn){ printf("%f ", *(grid+i*nDimIn+j)); j++;} printf("\n"); } */
+    free(rValues);
     return grid;
 }
 
@@ -289,7 +303,7 @@ void saveGrid(double *grid, int nDimIn, int nVals){
     fclose(fp);
 }
 
-double *interpolate(double *x, int nDimIn, int nDimOut, double *ptrFirstVal, double *ptrTableFirst, int nVals){
+double interpolate(double *x, int nDimIn, int nDimOut, double *ptrFirstVal, double *ptrTableFirst, int nVals){
     //this function interpolates values one by one.
     int i,j,k;
     double *nBreaks; nBreaks = ptrFirstVal+2;
@@ -335,7 +349,7 @@ double *interpolate(double *x, int nDimIn, int nDimOut, double *ptrFirstVal, dou
 
     //extract hypercube from table (1D output)
     double *answer=0;
-	answer=(double*) malloc(sizeof(double)*nDimOut*((int)pow(4,nDimIn)));
+	answer=(double*) malloc(sizeof(double)*nDimOut*((int)pow(4,nDimIn))); // should I leave tis outside the funciton
 	if(answer==NULL){
 		printf("Insuficient memory interpolate... Closing \n");exit(1);
 	}
@@ -400,5 +414,10 @@ double *interpolate(double *x, int nDimIn, int nDimOut, double *ptrFirstVal, dou
     //printf("error is %f \% \n", 100-100*(*answer/(*(exactFun(x,nDimOut,nDimIn)+nDimOut-1))) );
    // free(answer); free(h); free(t); free(xTemp); free(fl);
    free(pos);
-   return answer;
+
+   double result=0;
+   result = *answer;
+   free(answer);
+
+   return result;
 }
