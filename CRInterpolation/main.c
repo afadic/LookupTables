@@ -58,7 +58,7 @@ Cache misses for 1000 iterations, 4 input dimensions, 1 output dimension
 #define MICROSECONDS_IN_SEC 1000000.0
 
 int main(){
-    int nDimIn = 4;
+    int nDimIn = 5;
     int nDimOut = 1;
     int nVals; 
     int i;
