@@ -34,7 +34,7 @@ double exactFun(double *inVal, int InDim){
     for(i=0; i<InDim; i++){
         x[i] = inVal[i];
     }
-    return ((-x[0]*x[0]*(1-x[1])-x[1]*x[1]*x[2]*x[3]*x[4]));
+    return ((-x[0]*x[0]*(1-x[1]/x[0]/x[0])-x[1]*x[1]*x[2]*x[3]*x[4]));
 }
 
 void checkInBoundaries(int *fl, double *t,int nDimIn, double *nBreaks){
@@ -220,8 +220,7 @@ double *readTableConfig(int nDim){
 }
 
 double *writeGrid(double *ptrFirstVal, int nDimIn, int nVals){
-    //This function is in its final version. Please do not touch. This function fails for more than 6 dimensions
-    //because of segmentation fault. Working on this. Possible workaraounds, memory fragmentation.
+    //This function is in its final version. Please do not touch. 
     int i,j;
     double h[nDimIn]; // breakpoint spacing
     double *nBreaks=0; nBreaks = (ptrFirstVal+2);
@@ -292,7 +291,7 @@ int getNumVals(double *ptrFirstVal, int nDim){
        dimsArray[i] = *(ptrFirstVal+i);
        nVals = nVals*dimsArray[i];
     }
-    printf("number of grid values per output dimension is: %i \n", nVals);
+    //printf("number of grid values per output dimension is: %i \n", nVals);
     return nVals;
 }
 
@@ -303,12 +302,18 @@ void saveGrid(double *grid, int nDimIn, int nVals){
     fclose(fp);
 }
 
-double interpolate(double *x, int nDimIn, int nDimOut, double *ptrFirstVal, double *ptrTableFirst, int nVals){
+double interpolate(double *x, double *ptrConfig, double *ptrTableFirst){
     //this function interpolates values one by one.
     int i,j,k;
-    double *nBreaks; nBreaks = ptrFirstVal+2;
-    double *min; min = (ptrFirstVal + 2 + nDimIn);
-    double *max; max = (ptrFirstVal + 2 + 2*nDimIn);
+    int nDimIn = (int) *ptrConfig;
+    double *nBreaks; nBreaks = ptrConfig+2;
+    //printf("nBreaks %f \n", *nBreaks);
+    double *min; min = (ptrConfig + 2 + nDimIn);
+    double *max; max = (ptrConfig + 2 + 2*nDimIn);
+    int nDimOut = 1;
+    int nVals = 0;
+    nVals = getNumVals(ptrConfig+2, nDimIn); //this gets the number of values of the grid.
+    //printf("nVals inside interpolate %i \n", nVals);
 
     //apply transformations
     /*
