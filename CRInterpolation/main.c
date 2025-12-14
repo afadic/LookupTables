@@ -71,10 +71,10 @@ int main(){
     printf("Table size %f MB \n",(double) nVals*nDimOut/1000/1024*sizeof(double));
 
     double *grid;
-    grid = writeGrid(ptrConfig, nDimIn, nVals); //writes the grid. Not working for more than 6 dimension. Fragmentate memory
-    saveGrid(grid,nDimIn,nVals); //save grid to a file. Comment if necessary
-    
-    //grid = readGrid(nDimIn,nVals); //reads the grid if stored (faster calculations)
+    grid = writeGrid(ptrConfig, nDimIn, nVals); //writes the grid. 
+
+    //saveGrid(grid,nDimIn,nVals); //save grid to a file. Comment if necessary
+    //grid = readGrid(nDimIn,nVals); //reads the grid if stored 
 
     clock_t start = clock(), diff;
     writeTable(nVals,nDimIn,nDimOut,grid); //unnecessary if the table exist
@@ -82,10 +82,10 @@ int main(){
     diff = clock() - start; int msec = diff * 1000 / CLOCKS_PER_SEC;
     printf("Time taken write table %d seconds %d milliseconds \n", msec/1000, msec%1000);
 
-    double *ptrTableFirst; ptrTableFirst=readFile(nVals,nDimOut); // only read once. Table stored in memory ready to use
+    double *ptrTable; ptrTable=readFile(nVals,nDimOut); // only read once. Table stored in memory ready to use
 
     for(i=0;i<nDimOut;++i){
-            printf("table %i first value is: %f \n", i+1, *(ptrTableFirst+nVals*i)); //show table stats
+            printf("table %i first value is: %f \n", i+1, *(ptrTable+nVals*i)); //show table stats
     }
 
     //testValue = funTransformIn(testValue);
@@ -107,12 +107,12 @@ int main(){
     clock_t tic = clock();
 
     for(i=0;i<nIt;i++){
-        sol=interpolate(testValue[i], ptrConfig, ptrTableFirst);
+        sol=interpolate(testValue[i], ptrConfig, ptrTable);
     }
     clock_t toc = clock();
 
     free(ptrConfig);
-    free(ptrTableFirst);
+    free(ptrTable);
 
     printf("Average time taken per iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
     printf("Solution is %f \n", sol);

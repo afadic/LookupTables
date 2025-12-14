@@ -34,11 +34,11 @@ double exactFun(double *inVal, int InDim){
     for(i=0; i<InDim; i++){
         x[i] = inVal[i];
     }
-    return ((-x[0]*x[0]*(1-x[1]/x[0]/x[0])-x[1]*x[1]*x[2]*x[3]*x[4]));
+    return ((-x[0]*x[0]*(1-x[1]/x[0]/x[0]/x[0]/x[2])-x[1]*x[1]*x[2]*x[3]*x[4]/x[0]/x[0]));
 }
 
 void checkInBoundaries(int *fl, double *t,int nDimIn, double *nBreaks){
-    //this putine changes the index *fl and *t if location is out of bounds.
+    //changes the index *fl and *t if location is out of bounds.
     int i=0;
     for(i=0;i<nDimIn;i++){
         if(*(fl+i)<-1){*(fl+i)=-1;*(t+i)=0;}
