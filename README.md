@@ -1,5 +1,4 @@
-This folder contains the files required to execute a multidimensional CR spline in C. 
-The code can be reused to evaluate splines in Fluent.
+Cubic multidimensional interpolation. This implementation is designed to work with any number of dimensions. It is implemented efficiently with minimal cache misses. The code can be evaluate splines as surrogate models for example in Fluent.
 
 Anton Fadic
 14-07-2017
