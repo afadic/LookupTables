@@ -24,26 +24,29 @@ valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes
 ==99415== 
 ==99415== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 
-valgrind --tool=cachegrind --branch-sim=yes
-==2284542== I   refs:      4,280,257
-==2284542== I1  misses:        1,910
-==2284542== LLi misses:        1,853
-==2284542== I1  miss rate:      0.04%
-==2284542== LLi miss rate:      0.04%
-==2284542== 
-==2284542== D   refs:      2,006,498  (1,641,871 rd   + 364,627 wr)
-==2284542== D1  misses:       29,868  (    7,376 rd   +  22,492 wr)
-==2284542== LLd misses:        8,927  (    1,576 rd   +   7,351 wr)
-==2284542== D1  miss rate:       1.5% (      0.4%     +     6.2%  )
-==2284542== LLd miss rate:       0.4% (      0.1%     +     2.0%  )
-==2284542== 
-==2284542== LL refs:          31,778  (    9,286 rd   +  22,492 wr)
-==2284542== LL misses:        10,780  (    3,429 rd   +   7,351 wr)
-==2284542== LL miss rate:        0.2% (      0.1%     +     2.0%  )
-==2284542== 
-==2284542== Branches:        286,214  (  271,321 cond +  14,893 ind)
-==2284542== Mispredicts:       5,640  (    5,321 cond +     319 ind)
-==2284542== Mispred rate:        2.0% (      2.0%     +     2.1%   )
+valgrind --tool=cachegrind --branch-sim=yes 
+Cache misses for 1000 iterations, 4 input dimensions, 1 output dimension
+**********************************************************************
+==252946== 
+==252946== I   refs:      229,410,575
+==252946== I1  misses:          2,026
+==252946== LLi misses:          1,955
+==252946== I1  miss rate:        0.00%
+==252946== LLi miss rate:        0.00%
+==252946== 
+==252946== D   refs:       77,459,911  (64,278,591 rd   + 13,181,320 wr)
+==252946== D1  misses:         45,908  (    22,837 rd   +     23,071 wr)
+==252946== LLd misses:          9,385  (     1,608 rd   +      7,777 wr)
+==252946== D1  miss rate:         0.1% (       0.0%     +        0.2%  )
+==252946== LLd miss rate:         0.0% (       0.0%     +        0.1%  )
+==252946== 
+==252946== LL refs:            47,934  (    24,863 rd   +     23,071 wr)
+==252946== LL misses:          11,340  (     3,563 rd   +      7,777 wr)
+==252946== LL miss rate:          0.0% (       0.0%     +        0.1%  )
+==252946== 
+==252946== Branches:       16,293,138  (12,415,142 cond +  3,877,996 ind)
+==252946== Mispredicts:       538,478  (   538,195 cond +        283 ind)
+==252946== Mispred rate:          3.3% (       4.3%     +        0.0%   )
 
 **********************************************************************/
 
@@ -55,21 +58,20 @@ valgrind --tool=cachegrind --branch-sim=yes
 #define MICROSECONDS_IN_SEC 1000000.0
 
 int main(){
-    int nDimIn = 8;
+    int nDimIn = 4;
     int nDimOut = 1;
-    int nVals;
+    int nVals; 
     int i;
     writeTableConfig(nDimIn, nDimOut); //this writes the config file for the table
 
-    double *ptrFirstVal;
-	ptrFirstVal = readTableConfig(nDimIn); //pointer to the address of the first entry of table config
-
-    nVals = getNumVals(ptrFirstVal+2, nDimIn); //this gets the number of values of the grid.
-    
+    double *ptrConfig;
+	ptrConfig = readTableConfig(nDimIn); //pointer to the address of the first entry of table config
+    nVals = getNumVals(ptrConfig+2, nDimIn);
+   
     printf("Table size %f MB \n",(double) nVals*nDimOut/1000/1024*sizeof(double));
 
     double *grid;
-    grid = writeGrid(ptrFirstVal, nDimIn, nVals); //writes the grid. Not working for more than 6 dimension. Fragmentate memory
+    grid = writeGrid(ptrConfig, nDimIn, nVals); //writes the grid. Not working for more than 6 dimension. Fragmentate memory
     saveGrid(grid,nDimIn,nVals); //save grid to a file. Comment if necessary
     
     //grid = readGrid(nDimIn,nVals); //reads the grid if stored (faster calculations)
@@ -88,33 +90,35 @@ int main(){
 
     //testValue = funTransformIn(testValue);
     double sol=0;
-    int nIt=1;
+    int nIt=1000;
 
     double testValue[nIt][nDimIn];
     int j=0;
 
+    double min_val = 2;
+    double max_val = 4;
+
     for(i=0;i<nIt;i++) {
         for(j=0;j<nDimIn;j++){
-            testValue[i][j] = 1.9;
+            testValue[i][j] = min_val + (max_val - min_val) * ((double)rand() / RAND_MAX);//1.9;
         }
     }
 
     clock_t tic = clock();
 
     for(i=0;i<nIt;i++){
-        sol=interpolate(testValue[i],nDimIn,1,ptrFirstVal,ptrTableFirst,nVals);
+        sol=interpolate(testValue[i], ptrConfig, ptrTableFirst);
     }
     clock_t toc = clock();
 
-    free(ptrFirstVal);
+    free(ptrConfig);
     free(ptrTableFirst);
 
     printf("Average time taken per iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
     printf("Solution is %f \n", sol);
-    printf("Exact    is %f \n", exactFun(*testValue,nDimIn));
+    printf("Exact    is %f \n", exactFun(testValue[nIt-1],nDimIn));
 
     //Display GNU version
     printf("\n\n\ngcc version: %d.%d.%d\n",__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__);
-    displayAuthor();
     return 0;
 }
