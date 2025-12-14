@@ -16,7 +16,7 @@ int getNumVals(double *ptrFirstVal, int nDim); // get the number of values from 
 
 void saveGrid(double *grid, int nDimIn, int nVals); // stores the grid in Disk
 
-double interpolate(double *x, int nDimIn, int nDimOut, double *ptrFirstVal, double *ptrTableFirst, int numTestVal); //the most important function in the world
+double interpolate(double *x, double* ptrConfig, double *ptrTableFirst); //the most important function in the world
 
 double *funTransformIn(double *inVal);
 
