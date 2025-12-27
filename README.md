@@ -14,8 +14,8 @@ if many cells make these calls such as fine discretization of a surface of a cat
 Using precomputed data for a wide range of conditions and storing them in memory. One of the fastest
 ways to do this is implementing them in C which sets a good baseline benchmark for these purposes.
 I compared two approaches:
-- Hermite splines: cubic splines with C1 continuity. For a N-dimensional hermite spline, you need all the mixed partial derivatives. For N=3 you need 7, for N=4, 15 and for N=6 you need 63. For N dimensions you need 2^N-1 partial derivatives. This slows down significantly the building phase, but it is the most accurate approach.
-- Catmull-Rom splines: Similar to Hermite splines, but with finite difference approximated derivatives at the ends. This approach is a tradeoff at build time compared to Hermite splines, with larger payoffs at larger number of dimensions.
+- Catmull-Rom splines (CRInterpolation): Similar to Hermite splines, but with finite difference approximated derivatives at the ends. This approach is a tradeoff at build time compared to Hermite splines as it doesn't require the function derivatives at each node.
+- Hermite splines: For a N-dimensional hermite spline, you need all the mixed partial derivatives. For N=3 you need 7, for N=4, 15 and for N=6 you need 63. For N dimensions you need 2^N-1 partial derivatives. This slows down significantly the building phase, but it is the most accurate approach.
 
 # Findings
 This project led to many interesting findings. Mainly I found that Lookup tables should be avoided for N>=4 because:
