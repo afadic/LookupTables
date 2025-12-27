@@ -6,7 +6,7 @@ double *readFile(int length, int nDimOut); //read the table
 
 void writeTable(int length, int nDimIn, int nDimOut, double *grid); // writes the table
 
-void writeTableConfig(int nDim, int nDimOut); //write config file of table.
+void writeTableConfig(int nDim, int *breaks, double *l_bounds, double *u_bounds); //write config file of table.
 
 double *readTableConfig(int nDim); //read the table config
 

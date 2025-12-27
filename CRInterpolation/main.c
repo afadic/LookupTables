@@ -55,14 +55,23 @@ Cache misses for 1000 iterations, 4 input dimensions, 1 output dimension
 #include "time.h" // to compute time
 #include "math.h" // math functions
 #include "funFile.h" //calls required functions for this file, found in funFile.c
+#include "krahnertp.h" //calls the kinetic mechanism
+
 #define MICROSECONDS_IN_SEC 1000000.0
 
+#define N_DIM 4
+
 int main(){
-    int nDimIn = 5;
+    int nDimIn = N_DIM;
     int nDimOut = 1;
     int nVals; 
     int i;
-    writeTableConfig(nDimIn, nDimOut); //this writes the config file for the table
+
+    int n_breaks[N_DIM] = {5,5,5,5};
+    double l_bounds[N_DIM] = {700,1e-4,1e-4,1e-4};
+    double u_bounds[N_DIM] = {1200,1e-1,1e-1,1e-1};
+
+    writeTableConfig(nDimIn, n_breaks, l_bounds, u_bounds); //this writes the config file for the table
 
     double *ptrConfig;
 	ptrConfig = readTableConfig(nDimIn); //pointer to the address of the first entry of table config
@@ -79,6 +88,7 @@ int main(){
     clock_t start = clock(), diff;
     writeTable(nVals,nDimIn,nDimOut,grid); //unnecessary if the table exist
     free(grid);
+
     diff = clock() - start; int msec = diff * 1000 / CLOCKS_PER_SEC;
     printf("Time taken write table %d seconds %d milliseconds \n", msec/1000, msec%1000);
 
@@ -88,19 +98,25 @@ int main(){
             printf("table %i first value is: %f \n", i+1, *(ptrTable+nVals*i)); //show table stats
     }
 
-    //testValue = funTransformIn(testValue);
     double sol=0;
     int nIt=1000;
 
     double testValue[nIt][nDimIn];
     int j=0;
 
-    double min_val = 2;
-    double max_val = 4;
+    double min_val = 0;
+    double max_val = 0;
 
     for(i=0;i<nIt;i++) {
         for(j=0;j<nDimIn;j++){
-            testValue[i][j] = min_val + (max_val - min_val) * ((double)rand() / RAND_MAX);//1.9;
+            if (j==0){
+                min_val = 700;
+                max_val = 1200;
+            } else {
+                min_val = 1e-4;
+                max_val = 1e-1;
+            }
+            testValue[i][j] = min_val + (max_val - min_val) * ((double)rand() / RAND_MAX); //generate random test values
         }
     }
 
@@ -111,12 +127,12 @@ int main(){
     }
     clock_t toc = clock();
 
-    free(ptrConfig);
-    free(ptrTable);
-
     printf("Average time taken per iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
     printf("Solution is %f \n", sol);
     printf("Exact    is %f \n", exactFun(testValue[nIt-1],nDimIn));
+
+    free(ptrConfig);
+    free(ptrTable);
 
     //Display GNU version
     printf("\n\n\ngcc version: %d.%d.%d\n",__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__);

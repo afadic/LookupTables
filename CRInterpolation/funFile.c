@@ -1,6 +1,7 @@
 #include "stdio.h" // in out
 #include "math.h" // math functions
 #include "stdlib.h" // for dynamic allocation
+#include "krahnertp.h" //calls required functions for this file, found in funFile.c
 
 void displayAuthor(){
     printf("Written by Anton Fadic \n");
@@ -28,13 +29,21 @@ double *invFunTransformIn(double *inVal){
 
 double exactFun(double *inVal, int InDim){
     //this is the exact function to compare to
-    double x[InDim];
+    double x[InDim+1];
     int i=0;
 
     for(i=0; i<InDim; i++){
         x[i] = inVal[i];
+        //printf("x[%i]: %.6e\n", i, x[i]);
     }
-    return ((-x[0]*x[0]*(1-x[1]/x[0]/x[0]/x[0]/x[2])-x[1]*x[1]*x[2]*x[3]*x[4]/x[0]/x[0]));
+    x[InDim] = 10; // relaxation factor
+    double outputs=0;
+
+    outputs = r_rates(x);
+    //printf("NH3: %f\n", outputs);
+
+    //return -x[2]*x[2]*x[1]*x[0];
+    return outputs;
 }
 
 void checkInBoundaries(int *fl, double *t,int nDimIn, double *nBreaks){
@@ -90,13 +99,13 @@ double *readFile(int length, int nDimOut){
     if(ptrFile==NULL){
             printf("Memory not allocated. Table could not be read. Closing");
             free(ptrFile);
-    exit(0);
+            exit(-1);
     }
 
     fp = fopen ("Table.bin", "rb");
     if(fp == NULL){
         printf("Error in file opening\n");
-        exit(0);
+        exit(-1);
     }
 
     printf("Reading table file... \n");
@@ -113,7 +122,7 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
     ptrTable=(double*) malloc(nDimOut*length*sizeof(double));
     if(ptrTable==NULL){
         printf("memory not allocated. Closing...");
-        exit(0);
+        exit(-1);
     }
 
     double *gridTemp = 0;
@@ -137,7 +146,7 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
     printf("table written successfully \n");
 }
 
-void writeTableConfig(int nDimIn, int nDimOut){
+void writeTableConfig(int nDimIn, int *breaks, double *l_bounds, double *u_bounds){
     FILE * fp;
     const int configSize = 3 * nDimIn + 2;
     double config[configSize];
@@ -146,12 +155,12 @@ void writeTableConfig(int nDimIn, int nDimOut){
     //write number of dimensions in
     *config = nDimIn;
     //write the number of dimensions out
-    *(config+1) = nDimOut;
+    *(config+1) = 1;
 
     //number of breaks. 0-nDimIn-1
     double n_breaks[nDimIn]; 
     for(i=0; i<nDimIn; i++){
-        n_breaks[i] = 10;
+        n_breaks[i] = *(breaks + i);
     }
 
     for (i = 0; i < nDimIn; i++) {
@@ -162,30 +171,20 @@ void writeTableConfig(int nDimIn, int nDimOut){
     double max_vals[nDimIn];
 
     for(i=0; i<nDimIn; i++){
-        min_vals[i] = 1;
-        max_vals[i] = 5;
+        min_vals[i] = l_bounds[i];
+        max_vals[i] = u_bounds[i];
     }
 
     for(i=0; i<nDimIn; i++){
-        *(config+nDimIn+2+i) = min_vals[i]; *(config+2*nDimIn+2+i) = max_vals[i]; //Temperature
+        *(config+nDimIn+2+i) = min_vals[i]; 
+        *(config+2*nDimIn+2+i) = max_vals[i]; //Temperature
     }
-
-    /*
-    //Minimum and Maximum. 0-nDimIn-1
-    *(config+nDimIn+2+0) = min_vals[0]; *(config+2*nDimIn+2+0) = max_vals[0]; //Temperature
-    *(config+nDimIn+2+1) = min_vals[1]; *(config+2*nDimIn+2+1) = max_vals[1]; //xNH3
-    *(config+nDimIn+2+2) = min_vals[2]; *(config+2*nDimIn+2+2) = max_vals[2]; //xO2
-    *(config+nDimIn+2+3) = min_vals[3]; *(config+2*nDimIn+2+3) = max_vals[3]; //xNO
-    */
-
-    // *(ptr+nDimIn+2+2) = (double) 0.00000001; *(ptr+2*nDimIn+2+2) = (double) 0.1; //yNO
-    // *(ptr+nDimIn+2+3) = (double) 0.02; *(ptr+2*nDimIn+2+3) = (double) 0.25; //yO2
 
     fp = fopen ("tableConfig.bin", "wb");
     if (!fp) {
         perror("Error opening tableConfig.bin for writing");
-        return;
-    }
+        exit(-1);
+        }
     size_t written = fwrite(config, sizeof(double), configSize, fp);
     if (written != (size_t)configSize) {
         fprintf(stderr, "Error: Only wrote %zu/%d elements\n", written, configSize);
