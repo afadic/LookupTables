@@ -10,4 +10,8 @@ Average time taken by sundials is 0.093376 ms
 RMSE is 0.000620 
 This is a 7.77x speed up factor for a very low RMSE.
 
+See the output file for evaluation output. The columns are defined as:
+
+interpolated|exact|T|xNH3|xO2|XNO
+
 Anton Fadic
