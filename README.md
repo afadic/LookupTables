@@ -1,7 +1,6 @@
 Cubic multidimensional interpolation. This implementation is designed to work with any number of dimensions. It is implemented efficiently with minimal cache misses. The code can be evaluate splines as surrogate models for example in Fluent.
 
 Anton Fadic
-14-07-2017
 
 # Motivation
 Motivation: Chemical kinetics are stiff systems of ODE, sometimes with additional
