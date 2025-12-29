@@ -60,7 +60,7 @@ Cache misses for 1000 iterations, 4 input dimensions, 1 output dimension
 #define MICROSECONDS_IN_SEC 1000000.0
 
 #define N_DIM 4
-#define N_IT 100
+#define N_IT 500
 
 int main(){
     srand(0); //fix seed for reproducibility
@@ -130,18 +130,20 @@ int main(){
         sol[i]=interpolate(testValue[i], ptrConfig, ptrTable);
     }
     clock_t toc = clock();
+    printf("Average time taken per inference iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
 
+    tic = clock();
     for(i=0;i<nIt;i++){
         exact[i]=exactFun(testValue[i], nDimIn);
-        printf("%f %f ", sol[i], exact[i]);
-        printf("Testing point: %f, %f, %f, %f\n", testValue[i][0], testValue[i][1], testValue[i][2], testValue[i][3]);
+        //printf("%f %f ", sol[i], exact[i]);
+        //printf("Testing point: %f, %f, %f, %f\n", testValue[i][0], testValue[i][1], testValue[i][2], testValue[i][3]);
     }
+    toc = clock();
+    printf("Average time taken by sundials is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
     
     double error=0;
     error = rmse(sol, exact, nIt);
     printf("RMSE is %f \n", error);
-
-    printf("Average time taken per iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
     
     free(ptrConfig);
     free(ptrTable);
