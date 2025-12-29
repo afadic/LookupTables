@@ -18,7 +18,9 @@ I compared two approaches:
 - Hermite splines: For a N-dimensional hermite spline, you need all the mixed partial derivatives. For N=3 you need 7, for N=4, 15 and for N=6 you need 63. For N dimensions you need 2^N-1 partial derivatives. This slows down significantly the building phase, but it is the most accurate approach.
 
 # Findings
-This project led to many interesting findings. Mainly I found that Lookup tables should be avoided for N>=4 because:
+- The first and most interesting finding is that using Catmull-Rom interpolation for the ammonia oxidation case gave speedup factors of about 8x for a typical lookup table architecture. The important part here is that the comparison is done against the efficient implementation in Sundials IDA in C, compared against an efficient implementation of the lookup tables with minimal cache misses. As CFD applications are typically optimized themselves, optimized comparisons are needed to bring a realistic baseline and to set the right expectations.
+
+However, this project led to many other interesting findings. Mainly I found that Lookup tables should be avoided for N>=4 because:
 - Curse of dimensionality: Lookup tables are not practical for many dimensions (N>=4). This is because the memory requirements tend to explode, which may lead to inability to allocate RAM, and also to slowness.
 - Larger memory requirements are detrimental for speeding up the simulation, even if search is O(1) which it is in this case (as it is implemented efficiently). The reason why this is O(1) is because I don't do a search for interpolating data.  I use a functional approach that points directly to the location in memory of what I need. 
 
