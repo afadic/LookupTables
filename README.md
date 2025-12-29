@@ -11,7 +11,8 @@ if many cells make these calls such as fine discretization of a surface of a cat
 
 # Proposed solutions
 Using precomputed data for a wide range of conditions and storing them in memory. One of the fastest
-ways to do this is implementing them in C which sets a good baseline benchmark for these purposes.
+ways to do this is implementing them in C which sets a good baseline benchmark for these purposes. Cubic splines are a good choice due to their C1 continuity property, needed for CFD simulations. This is why linear interpolants are not used, as their derivatives are not continuous.
+
 I compared two approaches:
 - Catmull-Rom splines (CRInterpolation): Similar to Hermite splines, but with finite difference approximated derivatives at the ends. This approach is a tradeoff at build time compared to Hermite splines as it doesn't require the function derivatives at each node.
 - Hermite splines: For a N-dimensional hermite spline, you need all the mixed partial derivatives. For N=3 you need 7, for N=4, 15 and for N=6 you need 63. For N dimensions you need 2^N-1 partial derivatives. This slows down significantly the building phase, but it is the most accurate approach.
