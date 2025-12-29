@@ -56,6 +56,7 @@ Cache misses for 1000 iterations, 4 input dimensions, 1 output dimension
 #include "math.h" // math functions
 #include "funFile.h" //calls required functions for this file, found in funFile.c
 #include "krahnertp.h" //calls the kinetic mechanism
+#include <omp.h>
 
 #define MICROSECONDS_IN_SEC 1000000.0
 
@@ -70,7 +71,7 @@ int main(){
     int nVals; 
     int i;
 
-    double n_breaks[N_DIM] = {20,20,20,20};
+    double n_breaks[N_DIM] = {20,30,30,30};
     double l_bounds[N_DIM] = {800, 1e-4,1e-4,1e-4};
     double u_bounds[N_DIM] = {1400,1e-2,1e-2,1e-2};
 
@@ -94,7 +95,7 @@ int main(){
     free(grid);
 
     diff = clock() - start; int msec = diff * 1000 / CLOCKS_PER_SEC;
-    printf("Time taken write table %d seconds %d milliseconds \n", msec/1000, msec%1000);
+    printf("CPU time taken write table %d seconds %d milliseconds \n", msec/1000, msec%1000);
 
     double *ptrTable; ptrTable=readFile(nVals,nDimOut); // only read once. Table stored in memory ready to use
 
@@ -115,8 +116,8 @@ int main(){
                 min_val = 1000;
                 max_val = 1200;
             } else {
-                min_val = 1e-3;
-                max_val = 5e-3;
+                min_val = 5e-4;
+                max_val = 7e-3;
             }
             testValue[i][j] = min_val + (max_val - min_val)*((double)rand() / RAND_MAX); //generate random test values
         }

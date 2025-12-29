@@ -3,6 +3,7 @@
 #include "stdlib.h" // for dynamic allocation
 #include "krahnertp.h" //calls required functions for this file, found in funFile.c
 
+
 void displayAuthor(){
     printf("Written by Anton Fadic \n");
     printf("University of Alberta \n");
@@ -139,6 +140,7 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
     gridTemp=(double*) malloc(sizeof(double)*nDimIn);
 
     //loop for writing the table. j is number of dimensions and i is entry.
+    #pragma omp parallel for
     for(i=0; i<length; ++i){
         for(j=0;j<nDimOut;++j){
              *(ptrTable+j*length+i) = exactFun(grid+i*nDimIn, nDimIn);
