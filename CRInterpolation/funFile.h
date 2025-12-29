@@ -6,7 +6,7 @@ double *readFile(int length, int nDimOut); //read the table
 
 void writeTable(int length, int nDimIn, int nDimOut, double *grid); // writes the table
 
-void writeTableConfig(int nDim, int *breaks, double *l_bounds, double *u_bounds); //write config file of table.
+void writeTableConfig(int nDim, double *breaks, double *l_bounds, double *u_bounds); //write config file of table.
 
 double *readTableConfig(int nDim); //read the table config
 
@@ -16,7 +16,7 @@ int getNumVals(double *ptrFirstVal, int nDim); // get the number of values from 
 
 void saveGrid(double *grid, int nDimIn, int nVals); // stores the grid in Disk
 
-double interpolate(double *x, double* ptrConfig, double *ptrTableFirst); //the most important function in the world
+double interpolate(double *x, double *ptrConfig, double *ptrTableFirst); //the most important function in the world
 
 double *funTransformIn(double *inVal);
 
@@ -27,3 +27,5 @@ void checkInBoundaries(int *fl, double *t,int nDimIn, double *nBreaks);
 int *getPosition(int *coordinate, int *nBreaks, int nDimIn);
 
 void displayAuthor();
+
+double rmse(double *x, double *y, int len);

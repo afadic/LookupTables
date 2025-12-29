@@ -9,6 +9,16 @@ void displayAuthor(){
     printf("Version 1.0r \n");
 }
 
+double rmse(double *x, double *y, int len){
+    //computes the root mean square error between two arrays of length len
+    double sum=0.0;
+    int i=0;
+    for(i=0;i<len;i++){
+        sum += (x[i]-y[i])*(x[i]-y[i]);
+    }
+    return sqrt(sum/len);
+}
+
 double *funTransformIn(double *inVal){
     //when this function is called, the first entry is changed as 1/T, and the others are logarithm
     *inVal=1/(*inVal);
@@ -42,7 +52,7 @@ double exactFun(double *inVal, int InDim){
     outputs = r_rates(x);
     //printf("NH3: %f\n", outputs);
 
-    //return -x[2]*x[2]*x[1]*x[0];
+    //return -x[2]*x[2]*x[2]*x[1]*x[0]*x[0];
     return outputs;
 }
 
@@ -131,10 +141,7 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
     //loop for writing the table. j is number of dimensions and i is entry.
     for(i=0; i<length; ++i){
         for(j=0;j<nDimOut;++j){
-            // apply inverse transformation
-            // gridTemp= invFunTransformIn((grid+i*nDimIn));
-            // *(ptrTable+j*length+i) = *(exactFun(gridTemp, nDimOut, nDimIn)+j);
-             *(ptrTable+j*length+i) = (exactFun(grid+i*nDimIn, nDimIn)+j);
+             *(ptrTable+j*length+i) = exactFun(grid+i*nDimIn, nDimIn);
         }
     }
     fp = fopen ("Table.bin", "wb");
@@ -146,7 +153,7 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
     printf("table written successfully \n");
 }
 
-void writeTableConfig(int nDimIn, int *breaks, double *l_bounds, double *u_bounds){
+void writeTableConfig(int nDimIn, double *breaks, double *l_bounds, double *u_bounds){
     FILE * fp;
     const int configSize = 3 * nDimIn + 2;
     double config[configSize];
@@ -301,8 +308,12 @@ void saveGrid(double *grid, int nDimIn, int nVals){
     fclose(fp);
 }
 
+
 double interpolate(double *x, double *ptrConfig, double *ptrTableFirst){
-    //this function interpolates values one by one.
+    // Interpolate the value in the grid PtrTableFirst given the query point x and the config ptrConfig
+    // It works well for "interior points", i.e. those not close to the boundaries.
+    // TODO: fix bug close to the boundaries. Consider other methods for interpolation when close to boundaries.
+
     int i,j,k;
     int nDimIn = (int) *ptrConfig;
     double *nBreaks; nBreaks = ptrConfig+2;
@@ -312,7 +323,6 @@ double interpolate(double *x, double *ptrConfig, double *ptrTableFirst){
     int nDimOut = 1;
     int nVals = 0;
     nVals = getNumVals(ptrConfig+2, nDimIn); //this gets the number of values of the grid.
-    //printf("nVals inside interpolate %i \n", nVals);
 
     //apply transformations
     /*
@@ -385,7 +395,7 @@ double interpolate(double *x, double *ptrConfig, double *ptrTableFirst){
     //this is the most expensive function of the code!!!
     //It searches the table and extracts the required values
     //Takes ~90% of time.
-
+    
     for(i=0;i<(int) pow(4,nDimIn);++i){
         j=0; factor=0; temp=1;
         while(j<nDimIn){

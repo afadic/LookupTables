@@ -60,22 +60,26 @@ Cache misses for 1000 iterations, 4 input dimensions, 1 output dimension
 #define MICROSECONDS_IN_SEC 1000000.0
 
 #define N_DIM 4
+#define N_IT 100
 
 int main(){
+    srand(0); //fix seed for reproducibility
+
     int nDimIn = N_DIM;
     int nDimOut = 1;
     int nVals; 
     int i;
 
-    int n_breaks[N_DIM] = {5,5,5,5};
-    double l_bounds[N_DIM] = {700,1e-4,1e-4,1e-4};
-    double u_bounds[N_DIM] = {1200,1e-1,1e-1,1e-1};
+    double n_breaks[N_DIM] = {20,20,20,20};
+    double l_bounds[N_DIM] = {800, 1e-4,1e-4,1e-4};
+    double u_bounds[N_DIM] = {1400,1e-2,1e-2,1e-2};
 
     writeTableConfig(nDimIn, n_breaks, l_bounds, u_bounds); //this writes the config file for the table
 
     double *ptrConfig;
 	ptrConfig = readTableConfig(nDimIn); //pointer to the address of the first entry of table config
     nVals = getNumVals(ptrConfig+2, nDimIn);
+    printf("Debug: nVals is %d\n", nVals);
    
     printf("Table size %f MB \n",(double) nVals*nDimOut/1000/1024*sizeof(double));
 
@@ -94,12 +98,10 @@ int main(){
 
     double *ptrTable; ptrTable=readFile(nVals,nDimOut); // only read once. Table stored in memory ready to use
 
-    for(i=0;i<nDimOut;++i){
-            printf("table %i first value is: %f \n", i+1, *(ptrTable+nVals*i)); //show table stats
-    }
+    i = 0;
+    printf("table %i first value is: %f \n", i+1, *(ptrTable+nVals*i)); //show table stats
 
-    double sol=0;
-    int nIt=1000;
+    int nIt=N_IT;
 
     double testValue[nIt][nDimIn];
     int j=0;
@@ -110,27 +112,37 @@ int main(){
     for(i=0;i<nIt;i++) {
         for(j=0;j<nDimIn;j++){
             if (j==0){
-                min_val = 700;
+                min_val = 1000;
                 max_val = 1200;
             } else {
-                min_val = 1e-4;
-                max_val = 1e-1;
+                min_val = 1e-3;
+                max_val = 5e-3;
             }
-            testValue[i][j] = min_val + (max_val - min_val) * ((double)rand() / RAND_MAX); //generate random test values
+            testValue[i][j] = min_val + (max_val - min_val)*((double)rand() / RAND_MAX); //generate random test values
         }
     }
 
-    clock_t tic = clock();
+    double sol[N_IT];
+    double exact[N_IT];
 
+    clock_t tic = clock();
     for(i=0;i<nIt;i++){
-        sol=interpolate(testValue[i], ptrConfig, ptrTable);
+        sol[i]=interpolate(testValue[i], ptrConfig, ptrTable);
     }
     clock_t toc = clock();
 
-    printf("Average time taken per iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
-    printf("Solution is %f \n", sol);
-    printf("Exact    is %f \n", exactFun(testValue[nIt-1],nDimIn));
+    for(i=0;i<nIt;i++){
+        exact[i]=exactFun(testValue[i], nDimIn);
+        printf("%f %f ", sol[i], exact[i]);
+        printf("Testing point: %f, %f, %f, %f\n", testValue[i][0], testValue[i][1], testValue[i][2], testValue[i][3]);
+    }
+    
+    double error=0;
+    error = rmse(sol, exact, nIt);
+    printf("RMSE is %f \n", error);
 
+    printf("Average time taken per iteration is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
+    
     free(ptrConfig);
     free(ptrTable);
 
