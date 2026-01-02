@@ -20,40 +20,13 @@ double rmse(double *x, double *y, int len){
     return sqrt(sum/len);
 }
 
-double *funTransformIn(double *inVal){
-    //when this function is called, the first entry is changed as 1/T, and the others are logarithm
-    *inVal=1/(*inVal);
-    *(inVal+1)=log(*(inVal+1));
-    *(inVal+2)=log(*(inVal+2));
-    *(inVal+3)=log(*(inVal+3));
-    return inVal;
-}
-
-double *invFunTransformIn(double *inVal){
-    //This is invFunTransform(funTransform(x))=x
-    *inVal=1/(*inVal);
-    *(inVal+1)=exp(*(inVal+1));
-    *(inVal+2)=exp(*(inVal+2));
-    *(inVal+3)=exp(*(inVal+3));
-    return inVal;
-}
-
-double exactFun(double *inVal, int InDim){
+double exactFun(double *x, int InDim){
     //this is the exact function to compare to
-    double x[InDim+1];
-    int i=0;
-
-    for(i=0; i<InDim; i++){
-        x[i] = inVal[i];
-        //printf("x[%i]: %.6e\n", i, x[i]);
-    }
-    x[InDim] = 10; // relaxation factor
     double outputs=0;
-
     outputs = r_rates(x);
+    //following is debug only
     //printf("NH3: %f\n", outputs);
-
-    //return -x[2]*x[2]*x[2]*x[1]*x[0]*x[0];
+    //return -x[2]*x[0]*x[2] +x[2]*x[1]+ x[0]*x[1]*x[1]/x[2];
     return outputs;
 }
 
@@ -66,40 +39,19 @@ void checkInBoundaries(int *fl, double *t,int nDimIn, double *nBreaks){
     }
 }
 
-int *getPosition(int *coordinate, int *nBreaks, int nDimIn){
-	int i=0, *pos=0; pos = (int*) malloc(sizeof(int)*nDimIn);
-	//Message("Position is: \n");
-	for(i=0;i<nDimIn;i++){
-		//Message("coordinate is %i nNbreaks is %i \n", *(coordinate+i), *(nBreaks+i));
-		*(pos+i)=0;
-		if(*(coordinate+i)<0){
-			*(pos+i)=-1;
-		}
-		if(*(coordinate+i)+3>=*(nBreaks+i)){
-			*(pos+i)=1;
-		}
-		//Message("%i ", *(pos+i));
-	} //Message("\n");
-	return pos;
-}
-
-double CrInterp(double *ptrFll, double t, int pos){
+double CrInterp(double *ptrFll, double t){
 //this is the magic 4 point interpolation
 double fll, fl, fr, frr;
 fll = *ptrFll; fl = *(ptrFll+1); fr = *(ptrFll+2); frr = *(ptrFll+3);
-switch(pos){
-	case 0 : //center
-		return (1 - 3*t*t + 2*t*t*t )*fl + (3*t*t - 2*t*t*t)*fr + (t - 2*t*t + t*t*t)*(fr-fll)*0.5 + (-t*t + t*t*t)*(frr-fl)*0.5;
-		break;
-	case -1 : //left
-		return (1 - 2*t + t*t)*fl + (2*t - t*t)*fr + (-t+t*t)*(frr-fl)*0.5;
-		break;
-	case 1 : //right
-		return (1 - t*t)*fl + t*t*fr + (t - t*t)*(fr-fll)*0.5;
-		break;
-	default : //not necessary, but to prevent warning
-		return (1 - 3*t*t + 2*t*t*t )*fl + (3*t*t - 2*t*t*t)*fr + (t - 2*t*t + t*t*t)*(fr-fll)*0.5 + (-t*t + t*t*t)*(frr-fl)*0.5;
-	}
+return (1 - 3*t*t + 2*t*t*t )*fl + (3*t*t - 2*t*t*t)*fr + (t - 2*t*t + t*t*t)*(fr-fll)*0.5 + (-t*t + t*t*t)*(frr-fl)*0.5;
+        // Lagrange polynomial. Works better for coarser grids, but same performance for finer grids. Looses the C1 continuity property.
+        /*
+        return (fll * (-1.0/6.0*t*t*t + 1.0/2.0*t*t - 1.0/3.0*t) +
+                fl  * ( 1.0/2.0*t*t*t - 1.0*t*t     - 1.0/2.0*t + 1.0) +
+                fr  * (-1.0/2.0*t*t*t + 1.0/2.0*t*t + 1.0*t) +
+                frr * ( 1.0/6.0*t*t*t - 1.0/6.0*t)
+                );
+        */
 }
 
 double *readFile(int length, int nDimOut){
@@ -127,7 +79,6 @@ double *readFile(int length, int nDimOut){
 
 void writeTable(int length, int nDimIn, int nDimOut, double *grid){
     FILE * fp;
-    int i,j;
     double *ptrTable = 0;
 
     ptrTable=(double*) malloc(nDimOut*length*sizeof(double));
@@ -136,20 +87,16 @@ void writeTable(int length, int nDimIn, int nDimOut, double *grid){
         exit(-1);
     }
 
-    double *gridTemp = 0;
-    gridTemp=(double*) malloc(sizeof(double)*nDimIn);
-
     //loop for writing the table. j is number of dimensions and i is entry.
-    #pragma omp parallel for
-    for(i=0; i<length; ++i){
-        for(j=0;j<nDimOut;++j){
+    #pragma omp parallel for schedule(static)
+    for(int i=0; i<length; ++i){
+        for(int j=0;j<nDimOut;++j){
              *(ptrTable+j*length+i) = exactFun(grid+i*nDimIn, nDimIn);
         }
     }
     fp = fopen ("Table.bin", "wb");
     printf("Writing table file... \n");
     fwrite(ptrTable,sizeof(*ptrTable),nDimOut*length,fp);
-    free(gridTemp);
     free(ptrTable);
     fclose (fp);
     printf("table written successfully \n");
@@ -281,9 +228,6 @@ double *writeGrid(double *ptrFirstVal, int nDimIn, int nVals){
         j++;
     }
 
-    //min = invFunTransformIn(min);
-    //max = invFunTransformIn(max);
-
     /* //this code is for visualizing the grid. Uncomment if necessary,
     for(i=0;i<nVals;++i){j=0; while(j<nDimIn){ printf("%f ", *(grid+i*nDimIn+j)); j++;} printf("\n"); } */
     free(rValues);
@@ -311,137 +255,90 @@ void saveGrid(double *grid, int nDimIn, int nVals){
 }
 
 
-double interpolate(double *x, double *ptrConfig, double *ptrTableFirst){
-    // Interpolate the value in the grid PtrTableFirst given the query point x and the config ptrConfig
-    // It works well for "interior points", i.e. those not close to the boundaries.
-    // TODO: fix bug close to the boundaries. Consider other methods for interpolation when close to boundaries.
-
-    int i,j,k;
+double interpolate(double *x, double *ptrConfig, double *ptrTableFirst) {
     int nDimIn = (int) *ptrConfig;
-    double *nBreaks; nBreaks = ptrConfig+2;
-    //printf("nBreaks %f \n", *nBreaks);
-    double *min; min = (ptrConfig + 2 + nDimIn);
-    double *max; max = (ptrConfig + 2 + 2*nDimIn);
-    int nDimOut = 1;
-    int nVals = 0;
-    nVals = getNumVals(ptrConfig+2, nDimIn); //this gets the number of values of the grid.
-
-    //apply transformations
-    /*
-    min = funTransformIn(min);
-    min = invFunTransformIn(min);
-    max = funTransformIn(max);
-    max = invFunTransformIn(max);
-    x = funTransformIn(x);
-    x = invFunTransformIn(x);
-    */
-
-    double h[nDimIn];
-
-	for(i=0;i<nDimIn;++i){
-		*(h+i) = (*(max+i)- *(min+i))/(*(nBreaks+i)-1);  //get the h
-	}
-
-    double t[nDimIn]; // position in table
-
-    int fl[nDimIn];
-
-    double xTemp[nDimIn];
-
-	for(i=0;i<nDimIn;++i){
-		*(xTemp+i)= *(x+i); //copy query vector
-	};
-
-    //calculate t
-    for(k=0;k<nDimIn;k++){
-        *(fl+k)= (int) floor((*(xTemp+k) - *(min+k)) / (*(h+k))) -1; //actually it is fll
-        *(t+k)= (*(xTemp+k)- *(min+k))/(*(h+k)) - (double) *(fl+k)-1;
-       // printf("dim %i, x is %f, h %f, fl %i and t is %f \n", k+1, *(xTemp+k) , *(h+k),*(fl+k), *(t+k));
+    double *nBreaks = ptrConfig + 2;
+    double *min = ptrConfig + 2 + nDimIn;
+    double *max = ptrConfig + 2 + 2 * nDimIn;
+    
+    double buffer[256]; //preallocate buffer in stack. May run into stack overflow for larger nDimIn. 256 is set for nDimIn<=4
+    //turns out that malloc is much slower than stack allocation, and this function is called many times.
+    double h[10];     // Assumes max dimensions <= 10 which is reasonable
+    double t[10];
+    int fl[10];
+    
+    // 1. Pre-compute strides for the lookup table to avoid recalculating in loops
+    int tableStrides[10];
+    tableStrides[0] = 1;
+    for(int k=1; k < nDimIn; k++) {
+        tableStrides[k] = tableStrides[k-1] * (int)nBreaks[k-1];
     }
 
-    int *pos=0;
-    pos = getPosition(fl, (int*) nBreaks, nDimIn); //get the position if it lies of the borders for interpolation order
-    checkInBoundaries(fl,t,nDimIn,nBreaks);       //adjust position if it lies outside borders. Safety measure to avoid extrapolation.
+    // 2. Calculate coordinates and clamp boundaries
+    for (int k = 0; k < nDimIn; k++) {
+        h[k] = (max[k] - min[k]) / (nBreaks[k] - 1); 
+        
+        double u = (x[k] - min[k]) / h[k];
+        int idx = (int)floor(u) - 1; 
 
-    //extract hypercube from table (1D output)
-    double *answer=0;
-	answer=(double*) malloc(sizeof(double)*nDimOut*((int)pow(4,nDimIn))); // should I leave tis outside the funciton
-	if(answer==NULL){
-		printf("Insuficient memory interpolate... Closing \n");exit(1);
-	}
+        // SAFETY: Clamp indices to avoid reading garbage memory (-1)
+        if (idx < 0) idx = 0;
+        if (idx > (int)nBreaks[k] - 4) idx = (int)nBreaks[k] - 4;
 
-    int refIndex=0;
-	int temp=1;
-	j=0;
+        fl[k] = idx;
+        // t is distance from the 2nd point (P1) in the 4-point stencil
+        // t should generally be in [0, 1]
+        t[k] = (x[k] - min[k]) / h[k] - (double)(fl[k] + 1);
+    }
 
-    //this loop extracts the corner double left location of the table, so we get the refIndex.
+    // 3. Calculate Base Index of the Hypercube
+    int baseIndex = 0;
+    for(int k=0; k < nDimIn; k++){
+        baseIndex += fl[k] * tableStrides[k];
+    }
+
+    int refIndex=0; int temp=1; int j=0;
     while(j<nDimIn-1){
         temp *=  ((int) *(nBreaks+j));j++;
         //printf("%i \n", (int) *(fl+j));
         refIndex += temp*(*(fl+j));
     }
+    int nVals=0; nVals = getNumVals(ptrConfig + 2, nDimIn);
 
     refIndex += (*fl); //printf("refIndex is %i \n", refIndex);
     //change the output dimension, include in refIndex
-    refIndex = refIndex + (nDimOut-1)*nVals; //Read the right table
+    refIndex = refIndex + (1-1)*nVals; //Read the right table
     int index=0; int coordinate=0; int factor;
 
-    // moving this simple power calculation outside the loop reduces the time by about 67%
-    int *pow4 = malloc(sizeof(int) * nDimIn);
-    pow4[0] = 1;
-    for(int i = 1; i < nDimIn; i++){
-        pow4[i] = pow4[i-1] * 4;
-    }
-
-    //this loop fills the table with respect to refIndex. Final version.
-    //this is the most expensive function of the code!!!
-    //It searches the table and extracts the required values
-    //Takes ~90% of time.
+    // 4. Extract 4^N points 
+    int nPoints = 1 << (2 * nDimIn); // 4^nDimIn
     
-    for(i=0;i<(int) pow(4,nDimIn);++i){
-        j=0; factor=0; temp=1;
-        while(j<nDimIn){
-            coordinate = (int) floor(i/pow4[j])%4; //do not touch
-            factor += (coordinate * temp);
-            temp *= ((int) *(nBreaks+j));
-            j++;
-            //printf("%i ", coordinate);
-        };  //printf("\n");
-        index = refIndex + factor;
-        //printf("%i \n", factor);
-        *(answer+i) = *(ptrTableFirst+index);
-    }
-
-    //this loop creates the contraction to interpolate and the value is
-    //kept in the first position of the memory. This only takes ~10% of time.
-    j=0;
-
-    while(j<nDimIn){
-        //printf("t is %f \n", *(t+j));
-        i=0;
-        while(i<(int) pow(4,nDimIn-j-1)){
-             *(answer+i) = CrInterp(answer+4*i,*(t+j),*(pos+j));
-            // *(answer+i) = CrInterp(answer+4*i,*(t+j));
-            //printf("int Calc %f \n", *(answer+i));
-            ++i;
+    for (int i = 0; i < nPoints; ++i) {
+        int tempI = i;
+        int currentOffset = 0;
+        
+        for (int dim = 0; dim < nDimIn; dim++) {
+            int local_coord = tempI % 4; // 0, 1, 2, or 3
+            tempI /= 4;
+            currentOffset += local_coord * tableStrides[dim];
         }
-        j++;
+        
+        // ptrTableFirst is 1D array. We add the base corner + local offsets
+        buffer[i] = ptrTableFirst[baseIndex + currentOffset];
     }
 
-    //undo transformation;
-    //x = invFunTransformIn(x);
-    //min = invFunTransformIn(min);
-    //max = invFunTransformIn(max);
+    // 5. Contraction code (Dimension Reduction)
+    // Reduce one dimension at a time
+    int currentLen = nPoints;
+    for (int j = 0; j < nDimIn; j++) {
+        currentLen /= 4; // Output size shrinks by 4 each step
+        for (int i = 0; i < currentLen; i++) {
+            // Interpolate the contiguous block of 4 values using t[j]
+            // We overwrite the buffer in-place to save memory
+            buffer[i] = CrInterp(buffer + 4 * i, t[j]);
+        }
+    }
 
-    //printf("answer is %f \n",*answer);
-    //printf("exact  is: %f \n", *(exactFun(x,nDimOut,nDimIn)+nDimOut-1));
-    //printf("error is %f \% \n", 100-100*(*answer/(*(exactFun(x,nDimOut,nDimIn)+nDimOut-1))) );
-   // free(answer); free(h); free(t); free(xTemp); free(fl);
-   free(pos);
-
-   double result=0;
-   result = *answer;
-   free(answer);
-
-   return result;
+    // The result has contracted to the first element
+    return buffer[0];
 }
