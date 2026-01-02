@@ -23,10 +23,10 @@
 
 #include <time.h>  // For clock_gettime
 #include <stdint.h> // For int64_t
-
-#define COMPILER_BARRIER() asm volatile("" ::: "memory")
+//#include "constants.h"
 
 #define NEQ 6  // Number of equations
+
 
 // Data structure containing all model parameters
 typedef struct {
@@ -321,7 +321,7 @@ double r_rates(double inputs[5]) {
         .pNO = inputs[3] * 500,
         .R = 8.314e-3,
         .surface_density = 2.72e-5,
-        .relaxation_factor = inputs[4],
+        .relaxation_factor = 10,
         .T_ref = 385.0 + 273.15
     };
 
