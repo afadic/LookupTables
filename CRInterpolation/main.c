@@ -61,7 +61,7 @@ Cache misses for 1000 iterations, 4 input dimensions, 1 output dimension
 #define MICROSECONDS_IN_SEC 1000000.0
 
 #define N_DIM 4
-#define N_IT 500
+#define N_IT 6000
 
 int main(){
     srand(0); //fix seed for reproducibility
@@ -71,9 +71,15 @@ int main(){
     int nVals; 
     int i;
 
-    double n_breaks[N_DIM] = {20,30,30,30};
-    double l_bounds[N_DIM] = {800, 1e-4,1e-4,1e-4};
-    double u_bounds[N_DIM] = {1400,1e-2,1e-2,1e-2};
+    double n_breaks[N_DIM] = {20,20,20,20};
+    double l_bounds[N_DIM] = {800,1e-4,1e-4,1e-4};
+    double u_bounds[N_DIM] = {1400,1e-1,1e-1,1e-1};
+
+    printf("Validity for interior points only. Boundary handling not implemented yet. \n");
+    printf("T: %f to %f K \n", l_bounds[0] + (u_bounds[0]-l_bounds[0])/n_breaks[0], u_bounds[0] - (u_bounds[0]-l_bounds[0])/n_breaks[0]);
+    printf("xNH3: %f to %f K \n", l_bounds[1] + (u_bounds[1]-l_bounds[1])/n_breaks[1], u_bounds[1] - (u_bounds[1]-l_bounds[1])/n_breaks[1]);
+    printf("xO2: %f to %f K \n", l_bounds[2] + (u_bounds[2]-l_bounds[2])/n_breaks[2], u_bounds[2] - (u_bounds[2]-l_bounds[2])/n_breaks[2]);
+    printf("xNO: %f to %f K \n", l_bounds[3] + (u_bounds[3]-l_bounds[3])/n_breaks[3], u_bounds[3] - (u_bounds[3]-l_bounds[3])/n_breaks[3]);
 
     writeTableConfig(nDimIn, n_breaks, l_bounds, u_bounds); //this writes the config file for the table
 
@@ -92,6 +98,7 @@ int main(){
 
     clock_t start = clock(), diff;
     writeTable(nVals,nDimIn,nDimOut,grid); //unnecessary if the table exist
+    
     free(grid);
 
     diff = clock() - start; int msec = diff * 1000 / CLOCKS_PER_SEC;
@@ -113,11 +120,11 @@ int main(){
     for(i=0;i<nIt;i++) {
         for(j=0;j<nDimIn;j++){
             if (j==0){
-                min_val = 1000;
-                max_val = 1200;
+                min_val = 900;
+                max_val = 1300;
             } else {
-                min_val = 5e-4;
-                max_val = 7e-3;
+                min_val = 0.011;
+                max_val = 0.09;
             }
             testValue[i][j] = min_val + (max_val - min_val)*((double)rand() / RAND_MAX); //generate random test values
         }
@@ -136,8 +143,7 @@ int main(){
     tic = clock();
     for(i=0;i<nIt;i++){
         exact[i]=exactFun(testValue[i], nDimIn);
-        //printf("%f %f ", sol[i], exact[i]);
-        //printf("Testing point: %f, %f, %f, %f\n", testValue[i][0], testValue[i][1], testValue[i][2], testValue[i][3]);
+        //printf("%f %f Testing Point: %f, %f, %f, %f\n", sol[i], exact[i], testValue[i][0], testValue[i][1], testValue[i][2], testValue[i][3]);
     }
     toc = clock();
     printf("Average time taken by sundials is %f ms \n", (double)1000*(toc-tic)/CLOCKS_PER_SEC/((double)nIt));
@@ -151,5 +157,6 @@ int main(){
 
     //Display GNU version
     printf("\n\n\ngcc version: %d.%d.%d\n",__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__);
+    
     return 0;
 }
